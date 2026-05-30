@@ -1,0 +1,41 @@
+# 忽略数据集文件夹
+data/
+dataset/
+images/
+raw_data/
+processed_data/
+logs/
+
+# 忽略模型文件
+*.pth
+*.pt
+*.h5
+*.onnx
+*.bin
+
+# 忽略压缩包
+*.zip
+*.tar
+*.gz
+*.7z
+
+# 忽略 Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 忽略 IDE 配置
+.idea/
+.vscode/
+*.swp
+
+# 忽略环境文件
+.env
+venv/
+env/
+
+#忽略图片
+*.jpg
+*.jpep
+*.png
+*.json

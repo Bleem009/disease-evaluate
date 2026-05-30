@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>作物叶片病害严重度度测定助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #e9f5e9;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #2c5e2e;
+            color: white;
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fef9e6;
+        }
+
+        .message {
+            display: flex;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: #d9f0d9;
+            border-radius: 18px 18px 4px 18px;
+            padding: 10px 14px;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 18px 18px 18px 4px;
+            padding: 10px 14px;
+        }
+
+        .message-content {
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        .image-preview-in-msg {
+            max-width: 200px;
+            max-height: 150px;
+            margin-top: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: block;
+        }
+
+        .input-area {
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .preview-item {
+            position: relative;
+            display: inline-block;
+        }
+
+        .preview-img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .remove-img {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 18px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-row textarea {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 24px;
+            resize: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-row textarea:focus {
+            border-color: #2c5e2e;
+            box-shadow: 0 0 0 2px rgba(44, 94, 46, 0.2);
+        }
+
+        .file-label {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .file-label:hover {
+            background: #e0e0e0;
+        }
+
+        button {
+            background: #2c5e2e;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #1f4521;
+        }
+
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        .messages-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .messages-area::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">🌿 作物叶片病害严重度度测定助手</div>
+    <div class="messages-area" id="messagesArea">
+        <div class="message assistant-message">
+            <div class="message-content">您好！请上传一张植物叶片照片并描述您的需求，我会帮您进行相应分析。</div>
+        </div>
+    </div>
+    <div class="input-area">
+        <div class="image-preview-container" id="imagePreviewContainer"></div>
+        <div class="input-row">
+            <textarea id="messageInput" rows="1" placeholder="输入您的描述..."></textarea>
+            <label class="file-label" for="imageInput">📷 上传图片</label>
+            <input type="file" id="imageInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://127.0.0.1:8000";
+    const CHAT_URL = `${API_BASE}/chat`;
+    let sessionId = localStorage.getItem("session_id") || null;
+    let currentImageFile = null;
+
+    const messagesArea = document.getElementById("messagesArea");
+    const messageInput = document.getElementById("messageInput");
+    const imageInput = document.getElementById("imageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const previewContainer = document.getElementById("imagePreviewContainer");
+
+    function scrollToBottom() {
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === "&") return "&amp;";
+            if (m === "<") return "&lt;";
+            if (m === ">") return "&gt;";
+            return m;
+        });
+    }
+
+    function addMessage(role, text, imageUrl = null) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${role === "user" ? "user-message" : "assistant-message"}`;
+        let innerHtml = `<div class="message-content">${escapeHtml(text)}</div>`;
+        if (imageUrl) {
+            innerHtml += `<img src="${imageUrl}" class="image-preview-in-msg" alt="可视化结果" onclick="window.open(this.src)">`;
+        }
+        messageDiv.innerHTML = innerHtml;
+        messagesArea.appendChild(messageDiv);
+        scrollToBottom();
+        return messageDiv;
+    }
+
+    let loadingMsgElement = null;
+    function showLoading() {
+        if (loadingMsgElement) return;
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "message assistant-message loading";
+        loadingDiv.id = "loadingMsg";
+        loadingDiv.innerHTML = `<div class="message-content">🤔 思考中 <span>.</span><span>.</span><span>.</span></div>`;
+        messagesArea.appendChild(loadingDiv);
+        scrollToBottom();
+        loadingMsgElement = loadingDiv;
+    }
+
+    function hideLoading() {
+        if (loadingMsgElement) {
+            loadingMsgElement.remove();
+            loadingMsgElement = null;
+        }
+    }
+
+    function updateImagePreview(file) {
+        previewContainer.innerHTML = "";
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const imgDataUrl = e.target.result;
+            const wrapper = document.createElement("div");
+            wrapper.className = "preview-item";
+            const img = document.createElement("img");
+            img.src = imgDataUrl;
+            img.className = "preview-img";
+            const removeBtn = document.createElement("span");
+            removeBtn.innerText = "✕";
+            removeBtn.className = "remove-img";
+            removeBtn.onclick = (event) => {
+                event.stopPropagation();
+                currentImageFile = null;
+                imageInput.value = "";
+                updateImagePreview(null);
+            };
+            wrapper.appendChild(img);
+            wrapper.appendChild(removeBtn);
+            previewContainer.appendChild(wrapper);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function sendMessage() {
+        const userText = messageInput.value.trim();
+        if (!userText && !currentImageFile) {
+            alert("请至少输入文字或上传图片");
+            return;
+        }
+
+        // 显示用户消息（文字 + 图片预览）
+        let blobUrl = null;
+        if (currentImageFile) {
+            blobUrl = URL.createObjectURL(currentImageFile);
+        }
+        addMessage("user", userText || "[图片]", blobUrl);
+        if (blobUrl) {
+            // 不立即 revoke，让图片显示在界面上（稍后可能会被自动回收）
+        }
+
+        // 构建 FormData
+        const formData = new FormData();
+        formData.append("message", userText || "");
+        if (sessionId) {
+            formData.append("session_id", sessionId);
+        }
+        if (currentImageFile) {
+            formData.append("image", currentImageFile);
+        }
+
+        // 清空输入框和预览
+        messageInput.value = "";
+        currentImageFile = null;
+        imageInput.value = "";
+        updateImagePreview(null);
+
+        showLoading();
+        sendBtn.disabled = true;
+
+        try {
+            const response = await fetch(CHAT_URL, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`服务器错误 (${response.status}): ${errorText.substring(0, 100)}`);
+            }
+
+            const data = await response.json();
+            if (data.session_id) {
+                sessionId = data.session_id;
+                localStorage.setItem("session_id", sessionId);
+            }
+
+            hideLoading();
+            // 如果后端返回了 visualization_url，则显示图片
+            if (data.visualization_url) {
+                const fullImgUrl = API_BASE + data.visualization_url;
+                addMessage("assistant", data.reply || "分析完成。", fullImgUrl);
+            } else {
+                addMessage("assistant", data.reply || "抱歉，我没有理解您的意思，请重试。");
+            }
+        } catch (err) {
+            console.error("请求失败:", err);
+            hideLoading();
+            addMessage("assistant", `❌ 发生错误: ${err.message}\n请确保后端服务正在运行 (${CHAT_URL}) 并检查网络连接。`);
+        } finally {
+            sendBtn.disabled = false;
+            messageInput.focus();
+            // 注意：不要 revoke blobUrl，因为图片已经添加到 DOM 中，浏览器会管理内存
+        }
+    }
+
+    // 事件绑定
+    sendBtn.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    imageInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            currentImageFile = e.target.files[0];
+            updateImagePreview(currentImageFile);
+        } else {
+            currentImageFile = null;
+            updateImagePreview(null);
+        }
+    });
+    messageInput.addEventListener("input", function() {
+        this.style.height = "auto";
+        this.style.height = Math.min(this.scrollHeight, 120) + "px";
+    });
+    messageInput.style.height = "44px";
+</script>
+</body>
+</html>
